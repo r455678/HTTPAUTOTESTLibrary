@@ -214,5 +214,5 @@ class httpautotest(myURLOpener):
         payload=self.getexcelparas(sheetname, excelurl, rownum)[3]
         descontent=self.getexcelparas(sheetname, excelurl, rownum)[4]
         self.checkdata(domain,descontent, remethod, payload, do)
-        self.checktype(db)
+        db=eval('dict(%s)' % db)
         self.checkdb(db['host'], db['db'], db['user'],db['passwd'],db['port'],excelurl, sheetname, rownum)
