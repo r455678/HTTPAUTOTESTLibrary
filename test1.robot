@@ -2,8 +2,8 @@
 Library           httpautotest
 
 *** Variables ***
-&{db}             host=192.168.20.155    db=zlax_test    user=test    port=3306    passwd=test123
 ${case}           ${CURDIR}${/}case1.xlsx
+${db}             host='192.168.20.155',db='zlax_test',user='test',port=3306,passwd='test123'
 
 *** Test Cases ***
 testcase1
