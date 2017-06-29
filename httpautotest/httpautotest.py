@@ -201,13 +201,6 @@ class httpautotest(myURLOpener):
         Examples:
         | `Testcase` | http://192.168.20.154 | zkk | ${CURDIR}${/}case1${/}case1.xlsx | 1 | ${db} |
         """
-        '''
-        print domain
-        print sheetname
-        print excelurl
-        print rownum
-        print db
-        '''
         logging.info(u'用例名称: '+self.getexcelparas(sheetname, excelurl, rownum)[0])
         do=self.getexcelparas(sheetname, excelurl, rownum)[1]
         remethod=self.getexcelparas(sheetname, excelurl, rownum)[2]
