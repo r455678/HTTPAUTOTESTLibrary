@@ -11,7 +11,8 @@ import robot
 from urllib import urlencode
 from robot.libraries.BuiltIn import BuiltIn
 import logging
-
+from oneapi import httpautotestone
+import json
 
 try:
     from requests_ntlm import HttpNtlmAuth
@@ -177,12 +178,8 @@ class httpautotest(myURLOpener):
             logging.info(u'请求方式只能为get/post,现为' + remethod)
             raise AssertionError
 
-    def checktype(self, db):
-        if type(db) == type({}):
-            logging.info(u"数据库配置不为字典类型")
-            raise AssertionError
-        else:
-            pass
+    def todict(self, db):
+        return eval('dict(%s)' % db)
 
     #case执行方法
     def testcase(self,domain,sheetname,excelurl,rownum,db):
@@ -202,10 +199,31 @@ class httpautotest(myURLOpener):
         | `Testcase` | http://192.168.20.154 | zkk | ${CURDIR}${/}case1${/}case1.xlsx | 1 | ${db} |
         """
         logging.info(u'用例名称: '+self.getexcelparas(sheetname, excelurl, rownum)[0])
-        do=self.getexcelparas(sheetname, excelurl, rownum)[1]
-        remethod=self.getexcelparas(sheetname, excelurl, rownum)[2]
-        payload=self.getexcelparas(sheetname, excelurl, rownum)[3]
-        descontent=self.getexcelparas(sheetname, excelurl, rownum)[4]
+        do=self.getexcelparas(sheetname, excelurl, rownum)[1]#方法名
+        remethod=self.getexcelparas(sheetname, excelurl, rownum)[2]#请求方式
+        payload=self.getexcelparas(sheetname, excelurl, rownum)[3]#请求参数
+        descontent=self.getexcelparas(sheetname, excelurl, rownum)[4]#逾期结果
         self.checkdata(domain,descontent, remethod, payload, do)
-        db=eval('dict(%s)' % db)
+        db=self.todict(db)
         self.checkdb(db['host'], db['db'], db['user'],db['passwd'],db['port'],excelurl, sheetname, rownum)
+
+    def testcase_one(self,domain,sheetname,excelurl,rownum):
+        do = self.getexcelparas(sheetname, excelurl, rownum)[1]
+        remethod = self.getexcelparas(sheetname, excelurl, rownum)[2]
+        payload = self.getexcelparas(sheetname, excelurl, rownum)[3]
+        res=httpautotestone.getres(domain,remethod,payload,do)
+        return res
+
+    def to_json(self, content, pretty_print=False):
+        """ Convert a string to a JSON object
+        `content` String content to convert into JSON
+        'pretty_print' If defined, will output JSON is pretty print format
+        """
+        content = self._utf8_urlencode(content)
+        if pretty_print:
+            json_ = self._json_pretty_print(content)
+        else:
+            json_ = json.loads(content)
+        return json_
+
+
