@@ -11,7 +11,6 @@ import robot
 from urllib import urlencode
 from robot.libraries.BuiltIn import BuiltIn
 import logging
-from oneapi import httpautotestone
 import json
 
 try:
@@ -177,6 +176,8 @@ class httpautotest(myURLOpener):
             logging.info(u'请求方式错误')
             logging.info(u'请求方式只能为get/post,现为' + remethod)
             raise AssertionError
+        return res.content.decode("utf-8")
+
 
     def todict(self, db):
         return eval('dict(%s)' % db)
@@ -202,16 +203,17 @@ class httpautotest(myURLOpener):
         do=self.getexcelparas(sheetname, excelurl, rownum)[1]#方法名
         remethod=self.getexcelparas(sheetname, excelurl, rownum)[2]#请求方式
         payload=self.getexcelparas(sheetname, excelurl, rownum)[3]#请求参数
-        descontent=self.getexcelparas(sheetname, excelurl, rownum)[4]#逾期结果
-        self.checkdata(domain,descontent, remethod, payload, do)
+        descontent=self.getexcelparas(sheetname, excelurl, rownum)[4]#预期结果
+        res=self.checkdata(domain,descontent, remethod, payload, do)
         db=self.todict(db)
         self.checkdb(db['host'], db['db'], db['user'],db['passwd'],db['port'],excelurl, sheetname, rownum)
+        return res
 
-    def testcase_one(self,domain,sheetname,excelurl,rownum):
+    def testcase_one(self,domain,sheetname,excelurl,rownum,*args):
         do = self.getexcelparas(sheetname, excelurl, rownum)[1]
         remethod = self.getexcelparas(sheetname, excelurl, rownum)[2]
         payload = self.getexcelparas(sheetname, excelurl, rownum)[3]
-        res=httpautotestone.getres(domain,remethod,payload,do)
+        res=self.getres(domain,remethod,payload,do,*args)
         return res
 
     def to_json(self, content, pretty_print=False):
@@ -226,4 +228,21 @@ class httpautotest(myURLOpener):
             json_ = json.loads(content)
         return json_
 
-
+    def getres(self,domain, remethod, payload, do,*args):
+        payload = payload.encode("utf-8")
+        if len(args)==0:
+            payload_b=''
+        else:
+            payload_b=args[0]
+        if remethod.upper() == 'GET':
+            res = requests.get(domain + do, params=payload+'&'+payload_b, timeout=3)
+            resd = res.content.decode("utf-8")
+            return resd
+        elif remethod.upper() == 'POST':
+            res = requests.post(domain + do, params=payload +'&'+payload_b, timeout=3)
+            resd=res.content.decode("utf-8")
+            return resd
+        else:
+            logging.info(u'请求方式错误')
+            logging.info(u'请求方式只能为get/post,现为' + remethod)
+            raise AssertionError

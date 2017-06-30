@@ -14,6 +14,7 @@ ${url}            http://192.168.20.154
     Testcase    ${url}    测试1    ${case}    2    ${db}
 
 单接口
-    ${a}    Testcase One    ${url}    测试1    ${case}    2
-    ${j}    To Json    ${a}
-    log    ${j['msg']}
+    ${res1}    Testcase One    ${url}    zkk    ${case}    1
+    ${to_j}    To Json    ${res1}
+    Set Global Variable    ${token}    ${to_j['data']['token']}
+    ${res_2}    Testcase One    ${url}    zkk    ${case}    2    token=${token}
