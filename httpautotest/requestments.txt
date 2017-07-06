@@ -3,9 +3,6 @@ PyMySQL==0.7.10
 requests==2.18.1
 robotbackgroundlogger==1.2
 robotframework==3.0.2
-robotframework-databaselibrary==0.8.1
-robotframework-requests==0.4.7
 robotframework-ride==1.5.2.1
-robotframework-selenium2library==1.8.0
 urllib3==1.21.1
 xlrd==1.0.0
