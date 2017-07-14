@@ -27,16 +27,7 @@ s = requests.Session()
 s.mount('http://', HTTPAdapter(max_retries=3))
 s.mount('https://', HTTPAdapter(max_retries=3))
 
-logging.basicConfig(level=logging.DEBUG,
-                format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
-                datefmt='%a, %d %b %Y %H:%M:%S',
-                filename='httpauto.log',
-                filemode='w')
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-formatter = logging.Formatter('%(levelname)-8s %(message)s')
-console.setFormatter(formatter)
-logging.getLogger('').addHandler(console)
+
 
 class myURLOpener(urllib.FancyURLopener):
     def http_error_206(self, url, fp, errcode, errmsg, headers, data=None):
@@ -163,23 +154,24 @@ class httpautotest(myURLOpener):
             if res.status_code != 200:
                 logging.info(u"请求失败,statuscode非200")
                 raise AssertionError
-            logging.info(u"实际响应数据为:" + res.content.replace(" ", ""))
             resreplace=res.content.replace(" ", "")
             if descontent == resreplace:
                 logging.info(u"接口断言通过")
             else:
+                logging.info(u"实际响应数据为:" + res.content.replace(" ", ""))
                 logging.info(u"接口断言与期望不符")
+                logging.info(u"预期结果为" + descontent)
                 raise AssertionError
         elif remethod.upper() == 'POST':
             res = requests.post(domain + do, params=payload, timeout=3)
             if res.status_code != 200:
                 logging.info(u"请求失败,statuscode非200")
                 raise AssertionError
-            logging.info(u"实际响应数据为:"  + res.content.replace(" ", ""))
             resreplace=res.content.replace(" ", "")
             if descontent == resreplace:
                 logging.info(u"接口断言通过")
             else:
+                logging.info(u"实际响应数据为:" + res.content.replace(" ", ""))
                 logging.info(u"与期望不符")
                 logging.info(u"预期结果为"+descontent)
                 raise AssertionError
