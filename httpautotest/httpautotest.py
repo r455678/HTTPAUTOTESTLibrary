@@ -124,7 +124,14 @@ class httpautotest(myURLOpener):
             if size> 0:
                 logging.info(u"查询出数据条数为 "+str(size)+u" 条")
                 info = cur.fetchmany(1)
-                if info[0][0]==expectedvalue:
+                jd=str(info[0])[1:-1]
+                if type(expectedvalue)==float:
+                    jd =jd.replace(' ', '').replace(',', '')
+                    expectedvalue=str(int(expectedvalue))
+                else:
+                    jd=jd.replace(' ', '')
+                    expectedvalue=expectedvalue
+                if jd==expectedvalue:
                     logging.info(u"数据库校验通过")
                 else:
                     logging.info(u"数据库校验未通过,预期值: "+str(expectedvalue).replace('.0',''))
@@ -261,3 +268,4 @@ class httpautotest(myURLOpener):
             logging.info(u'请求方式错误')
             logging.info(u'请求方式只能为get/post,现为' + remethod)
             raise AssertionError
+
