@@ -4,8 +4,7 @@
 
 import requests
 import xlrd
-import urllib,sys
-from requests.adapters import HTTPAdapter
+import sys
 import pymysql
 import robot
 from urllib import urlencode
@@ -13,39 +12,12 @@ from robot.libraries.BuiltIn import BuiltIn
 import logging
 import json
 
-try:
-    from requests_ntlm import HttpNtlmAuth
-except ImportError:
-    pass
-
 default_encoding = 'utf-8'
 if sys.getdefaultencoding() != default_encoding:
     reload(sys)
     sys.setdefaultencoding(default_encoding)
 
-s = requests.Session()
-s.mount('http://', HTTPAdapter(max_retries=3))
-s.mount('https://', HTTPAdapter(max_retries=3))
-
-'''
-logging.basicConfig(level=logging.DEBUG,
-                format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
-                datefmt='%a, %d %b %Y %H:%M:%S',
-                filename='myapp.log',
-                filemode='w')
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-console.setFormatter(formatter)
-logging.getLogger('').addHandler(console)
-'''
-
-
-class myURLOpener(urllib.FancyURLopener):
-    def http_error_206(self, url, fp, errcode, errmsg, headers, data=None):
-        pass
-
-class httpautotest(myURLOpener):
+class httpautotest():
     ROBOT_LIBRARY_SCOPE = 'Global'
 
     def __init__(self):
@@ -67,20 +39,20 @@ class httpautotest(myURLOpener):
     """
     打开excel
     """
-    def openexcel(self, excelurl,sheetname):
+    def _openexcel(self, excelurl,sheetname):
         bk = xlrd.open_workbook(excelurl)
         try:
             sh = bk.sheet_by_name(sheetname)
             return sh
         except:
-            print "no sheet in %s named %s" % (excelurl, sheetname)
+            logging.info("no sheet in %s named %s" % (excelurl, sheetname))
             exit()
 
     """
     读取excel参数
     """
-    def getexcelparas(self,sheetname,exceldir,num):
-        sh = self.openexcel(exceldir, sheetname)
+    def _getexcelparas(self,sheetname,exceldir,num):
+        sh = self._openexcel(exceldir, sheetname)
         try:
             row_data=sh.row_values(int(num))
         except Exception, e:
@@ -89,7 +61,7 @@ class httpautotest(myURLOpener):
 
 
     #数据校验方法
-    def checkdb(self,host,dbname,username,password,port,excelurl,sheetname,rownum):
+    def _checkdb(self,host,dbname,username,password,port,excelurl,sheetname,rownum):
         """
         'host': dbhost
 
@@ -116,9 +88,9 @@ class httpautotest(myURLOpener):
             charset='utf8'
         )
         cur = conn.cursor()
-        ischeckdb = self.getexcelparas(sheetname, excelurl, rownum)[5]
-        sqlscript = self.getexcelparas(sheetname, excelurl, rownum)[6]
-        expectedvalue=self.getexcelparas(sheetname, excelurl, rownum)[7]
+        ischeckdb = self._getexcelparas(sheetname, excelurl, rownum)[5]
+        sqlscript = self._getexcelparas(sheetname, excelurl, rownum)[6]
+        expectedvalue=self._getexcelparas(sheetname, excelurl, rownum)[7]
         if ischeckdb == 1:
             size = cur.execute(sqlscript)
             if size> 0:
@@ -130,7 +102,6 @@ class httpautotest(myURLOpener):
                     expectedvalue=str(int(expectedvalue))
                 else:
                     jd=jd.replace(' ', '')
-                    expectedvalue=expectedvalue
                 if jd==expectedvalue:
                     logging.info(u"数据库校验通过")
                 else:
@@ -151,7 +122,7 @@ class httpautotest(myURLOpener):
         conn.close()
 
     #数据校验
-    def checkdata(self,domain,descontent,remethod,payload,do):
+    def _checkdata(self,domain,descontent,remethod,payload,do):
         """
         'domain': server host
 
@@ -221,21 +192,21 @@ class httpautotest(myURLOpener):
         Examples:
         | `Testcase` | http://192.168.20.154 | zkk | ${CURDIR}${/}case1${/}case1.xlsx | 1 | ${db} |
         """
-        logging.info(u'用例名称: '+self.getexcelparas(sheetname, excelurl, rownum)[0])
-        do=self.getexcelparas(sheetname, excelurl, rownum)[1]#方法名
-        remethod=self.getexcelparas(sheetname, excelurl, rownum)[2]#请求方式
-        payload=self.getexcelparas(sheetname, excelurl, rownum)[3]#请求参数
-        descontent=self.getexcelparas(sheetname, excelurl, rownum)[4]#预期结果
-        res=self.checkdata(domain,descontent, remethod, payload, do)
+        logging.info(u'用例名称: '+self._getexcelparas(sheetname, excelurl, rownum)[0])
+        do=self._getexcelparas(sheetname, excelurl, rownum)[1]#方法名
+        remethod=self._getexcelparas(sheetname, excelurl, rownum)[2]#请求方式
+        payload=self._getexcelparas(sheetname, excelurl, rownum)[3]#请求参数
+        descontent=self._getexcelparas(sheetname, excelurl, rownum)[4]#预期结果
+        res=self._checkdata(domain,descontent, remethod, payload, do)
         db=self.todict(db)
-        self.checkdb(db['host'], db['db'], db['user'],db['passwd'],db['port'],excelurl, sheetname, rownum)
+        self._checkdb(db['host'], db['db'], db['user'],db['passwd'],db['port'],excelurl, sheetname, rownum)
         return res
 
     def testcase_one(self,domain,sheetname,excelurl,rownum,*args):
-        do = self.getexcelparas(sheetname, excelurl, rownum)[1]
-        remethod = self.getexcelparas(sheetname, excelurl, rownum)[2]
-        payload = self.getexcelparas(sheetname, excelurl, rownum)[3]
-        res=self.getres(domain,remethod,payload,do,*args)
+        do = self._getexcelparas(sheetname, excelurl, rownum)[1]
+        remethod = self._getexcelparas(sheetname, excelurl, rownum)[2]
+        payload = self._getexcelparas(sheetname, excelurl, rownum)[3]
+        res=self._getres(domain,remethod,payload,do,*args)
         return res
 
     def to_json(self, content, pretty_print=False):
@@ -250,7 +221,7 @@ class httpautotest(myURLOpener):
             json_ = json.loads(content)
         return json_
 
-    def getres(self,domain, remethod, payload, do,*args):
+    def _getres(self,domain, remethod, payload, do,*args):
         payload = payload.encode("utf-8")
         if len(args)==0:
             payload_b=''
@@ -269,3 +240,6 @@ class httpautotest(myURLOpener):
             logging.info(u'请求方式只能为get/post,现为' + remethod)
             raise AssertionError
 
+if __name__ == '__main__':
+    a=httpautotest()
+    a.testcase('http://192.168.20.154','测试1','../case1.xlsx',2,"host='192.168.20.155',db='zlax_test',user='test',passwd='test123',port=3306")
