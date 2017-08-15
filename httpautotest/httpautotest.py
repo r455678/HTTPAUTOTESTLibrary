@@ -56,7 +56,7 @@ class httpautotest():
         try:
             row_data=sh.row_values(int(num))
         except Exception, e:
-            print u'所选列没有数据'
+            logging.info(u"所选列没有数据")
         return row_data
 
 
