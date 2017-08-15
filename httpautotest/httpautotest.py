@@ -96,17 +96,17 @@ class httpautotest():
             if size> 0:
                 logging.info(u"查询出数据条数为 "+str(size)+u" 条")
                 info = cur.fetchmany(1)
-                jd=str(info[0])[1:-1]
-                if type(expectedvalue)==float:
-                    jd =jd.replace(' ', '').replace(',', '')
-                    expectedvalue=str(int(expectedvalue))
-                else:
-                    jd=jd.replace(' ', '')
-                if jd==expectedvalue:
+                infol=list(info[0])
+                arr = expectedvalue.split(',')
+                for i in range(len(infol)):
+                    infol[i] = str(infol[i]).encode("utf-8")
+                for i in range(len(arr)):
+                    arr[i] = str(arr[i]).encode("utf-8")
+                if infol.sort()==arr.sort():
                     logging.info(u"数据库校验通过")
                 else:
                     logging.info(u"数据库校验未通过,预期值: "+str(expectedvalue).replace('.0',''))
-                    logging.info(u" 实际值: "+str(info[0][0]))
+                    logging.info(u"实际值: "+str(info[0][0]))
                     raise AssertionError()
             else :
                 logging.info(u"数据库中没有查询到数据")
