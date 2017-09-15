@@ -2,43 +2,17 @@
 # coding:utf8
 # author andre.yang
 
-import urllib,sys,xlrd,requests
-from requests.adapters import HTTPAdapter
-import robot,logging,json,pymysql
+import requests,xlrd,sys,pymysql, robot ,logging ,json
 from urllib import urlencode
 from robot.libraries.BuiltIn import BuiltIn
-try:
-    from requests_ntlm import HttpNtlmAuth
-except ImportError:
-    pass
 
 default_encoding = 'utf-8'
 if sys.getdefaultencoding() != default_encoding:
     reload(sys)
     sys.setdefaultencoding(default_encoding)
 
-s = requests.Session()
-s.mount('http://', HTTPAdapter(max_retries=3))
-s.mount('https://', HTTPAdapter(max_retries=3))
 
-'''
-logging.basicConfig(level=logging.DEBUG,
-                format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
-                datefmt='%a, %d %b %Y %H:%M:%S',
-                filename='myapp.log',
-                filemode='w')
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-console.setFormatter(formatter)
-logging.getLogger('').addHandler(console)
-'''
-
-class myURLOpener(urllib.FancyURLopener):
-    def http_error_206(self, url, fp, errcode, errmsg, headers, data=None):
-        pass
-
-class httpautotest(myURLOpener):
+class httpautotest():
     ROBOT_LIBRARY_SCOPE = 'Global'
 
     def __init__(self):
@@ -60,7 +34,8 @@ class httpautotest(myURLOpener):
     """
     打开excel
     """
-    def openexcel(self, excelurl,sheetname):
+
+    def _openexcel(self, excelurl, sheetname):
         bk = xlrd.open_workbook(excelurl)
         try:
             sh = bk.sheet_by_name(sheetname)
@@ -72,32 +47,29 @@ class httpautotest(myURLOpener):
     """
     读取excel参数
     """
-    def getexcelparas(self,sheetname,exceldir,num):
-        sh = self.openexcel(exceldir, sheetname)
+
+    def _getexcelparas(self, sheetname, exceldir, num):
+        sh = self._openexcel(exceldir, sheetname)
         try:
-            row_data=sh.row_values(int(num))
+            row_data = sh.row_values(int(num))
         except Exception, e:
-            logging.info( u'所选列没有数据')
+            logging.info(u"所选列没有数据")
         return row_data
 
-
-    #数据校验方法
-    def checkdb(self,host,dbname,username,password,port,excelurl,sheetname,rownum):
+    # 数据校验方法
+    def _checkdb(self, host, dbname, username, password, port, excelurl, sheetname, rownum):
         """
         'host': dbhost
-
         'dbname': database's name
-
         'username': dbusername
-
         'password': dbpassword
-        
+
         'port': dbport
-        
+
         'excelurl': exp D://downloads/case.xls
-        
+
         sheetname: sheet's name exp sheet1
-        
+
         rownum :row num
         """
         conn = pymysql.connect(
@@ -109,55 +81,51 @@ class httpautotest(myURLOpener):
             charset='utf8'
         )
         cur = conn.cursor()
-        ischeckdb = self.getexcelparas(sheetname, excelurl, rownum)[5]
-        sqlscript = self.getexcelparas(sheetname, excelurl, rownum)[6]
-        expectedvalue=self.getexcelparas(sheetname, excelurl, rownum)[7]
+        ischeckdb = self._getexcelparas(sheetname, excelurl, rownum)[5]
+        sqlscript = self._getexcelparas(sheetname, excelurl, rownum)[6]
+        expectedvalue = self._getexcelparas(sheetname, excelurl, rownum)[7]
         if ischeckdb == 1:
             size = cur.execute(sqlscript)
-            if size> 0:
-                logging.info(u"查询出数据条数为 "+str(size)+u" 条")
+            if size > 0:
+                logging.info(u"查询出数据条数为 " + str(size) + u" 条")
                 info = cur.fetchmany(1)
-                jd=str(info[0])[1:-1]#截取预期值
-                if type(expectedvalue)==float:
-                    jd =jd.replace(' ', '').replace(',', '')
-                    expectedvalue=str(int(expectedvalue))
-                else:
-                    jd=jd.replace(' ', '')
-                    expectedvalue=expectedvalue
-                if jd==expectedvalue:
+                infol = list(info[0])
+                arr = expectedvalue.split(',')
+                for i in range(len(infol)):
+                    infol[i] = str(infol[i]).encode("utf-8")
+                for i in range(len(arr)):
+                    arr[i] = str(arr[i]).encode("utf-8")
+                if infol.sort() == arr.sort():
                     logging.info(u"数据库校验通过")
                 else:
-                    logging.info(u"数据库校验未通过,预期值: "+str(expectedvalue).replace('.0',''))
-                    logging.info(u" 实际值: "+jd)
+                    logging.info(u"数据库校验未通过,预期值: " + str(expectedvalue).replace('.0', ''))
+                    logging.info(u"实际值: " + str(info[0][0]))
                     raise AssertionError()
-            else :
+            else:
                 logging.info(u"数据库中没有查询到数据")
                 raise AssertionError
+
         elif ischeckdb.upper() == 'FALSE' or ischeckdb == '':
             logging.info(u"不进入SQL判断")
-        else :
-            logging.info(u'第'+str(rownum)+u'行'+u'是否检查数据库输入不合法')
+        else:
+            logging.info(u'第' + str(rownum) + u'行' + u'是否检查数据库输入不合法')
             raise RuntimeError
         cur.close()
         conn.commit()
         conn.close()
 
-    #数据校验
-    def checkdata(self,domain,descontent,remethod,payload,do):
+    # 数据校验
+    def _checkdata(self, domain, descontent, remethod, payload, do):
         """
         'domain': server host
-
         'descontent': wish content
-
         'remethod': request method
-
         'payload': params
-
         'do': request do
         """
-        descontent = descontent.replace("\n","").replace(" ", "").encode("utf-8")
-        payload=payload.encode("utf-8")
-        logging.info (u'请求参数为:' + str(payload))
+        descontent = descontent.replace("\n", "").replace(" ", "").encode("utf-8")
+        payload = payload.encode("utf-8")
+        logging.info(u'请求参数为:' + str(payload))
         if remethod.upper() == 'GET':
             res = requests.get(domain + do, params=payload, timeout=3)
         elif remethod.upper() == 'POST':
@@ -166,70 +134,59 @@ class httpautotest(myURLOpener):
             logging.info(u'请求方式错误')
             logging.info(u'请求方式只能为get/post,现为' + remethod)
             raise AssertionError
-        resreplace = res.content.replace(" ", "")
         if res.status_code != 200:
             logging.info(u"请求失败,statuscode非200")
             raise AssertionError
+        resreplace = res.content.replace(" ", "")
         if descontent == resreplace:
             logging.info(u"接口断言通过")
         else:
             logging.info(u"实际响应数据为:" + res.content.replace(" ", ""))
             logging.info(u"接口断言与期望不符")
-            logging.info(u"预期响应结果为" + descontent)
+            logging.info(u"预期结果为" + descontent)
             raise AssertionError
         return res.content.decode("utf-8")
 
-
     def todict(self, db):
-        try :
-            dbr=eval('dict(%s)' % db)
+        try:
+            redb=eval('dict(%s)' % db)
         except:
-            logging.info(u"数据库配置错误")
-        return dbr
+            return (u'数据库配置错误')
+        return redb
 
-    #case执行方法
-    def testcase(self,domain,sheetname,excelurl,rownum,db):
+    # case执行方法
+    def testcase(self, domain, sheetname, excelurl, rownum, db):
 
         """
         'domain': host
-        
+
         'sheetname': sheet's name exp sheet1
-        
+
         'excelurl': exp D://downloads/case.xls
-        
+
         'rownum': row number
-        
+
         'db': database config
-        
+
         Examples:
         | `Testcase` | http://192.168.20.154 | zkk | ${CURDIR}${/}case1${/}case1.xlsx | 1 | ${db} |
         """
-        logging.info(u'用例名称: '+self.getexcelparas(sheetname, excelurl, rownum)[0])
-        do=self.getexcelparas(sheetname, excelurl, rownum)[1]#方法名
-        remethod=self.getexcelparas(sheetname, excelurl, rownum)[2]#请求方式
-        payload=self.getexcelparas(sheetname, excelurl, rownum)[3]#请求参数
-        descontent=self.getexcelparas(sheetname, excelurl, rownum)[4]#预期结果
-        res=self.checkdata(domain,descontent, remethod, payload, do)
-        db=self.todict(db)
-        self.checkdb(db['host'], db['db'], db['user'],db['passwd'],db['port'],excelurl, sheetname, rownum)
+        logging.info(u'用例名称: ' + self._getexcelparas(sheetname, excelurl, rownum)[0])
+        do = self._getexcelparas(sheetname, excelurl, rownum)[1]  # 方法名
+        remethod = self._getexcelparas(sheetname, excelurl, rownum)[2]  # 请求方式
+        payload = self._getexcelparas(sheetname, excelurl, rownum)[3]  # 请求参数
+        descontent = self._getexcelparas(sheetname, excelurl, rownum)[4]  # 预期结果
+        res = self._checkdata(domain, descontent, remethod, payload, do)
+        db = self.todict(db)
+        self._checkdb(db['host'], db['db'], db['user'], db['passwd'], db['port'], excelurl, sheetname, rownum)
         return res
 
-    def testcase_one(self,domain,sheetname,excelurl,rownum,*args):
-        do = self.getexcelparas(sheetname, excelurl, rownum)[1]
-        remethod = self.getexcelparas(sheetname, excelurl, rownum)[2]
-        payload = self.getexcelparas(sheetname, excelurl, rownum)[3]
-        res=self.getres(domain,remethod,payload,do,*args)
+    def testcase_one(self, domain, sheetname, excelurl, rownum, *args):
+        do = self._getexcelparas(sheetname, excelurl, rownum)[1]
+        remethod = self._getexcelparas(sheetname, excelurl, rownum)[2]
+        payload = self._getexcelparas(sheetname, excelurl, rownum)[3]
+        res = self._getres(domain, remethod, payload, do, *args)
         return res
-
-    def testcase_one_db(self,domain,sheetname,excelurl,rownum,db,*args):
-        do = self.getexcelparas(sheetname, excelurl, rownum)[1]
-        remethod = self.getexcelparas(sheetname, excelurl, rownum)[2]
-        payload = self.getexcelparas(sheetname, excelurl, rownum)[3]
-        res=self.getres(domain,remethod,payload,do,*args)
-        db=self.todict(db)
-        self.checkdb(db['host'], db['db'], db['user'],db['passwd'],db['port'],excelurl, sheetname, rownum)
-        return res
-
 
     def to_json(self, content, pretty_print=False):
         """ Convert a string to a JSON object
@@ -243,19 +200,19 @@ class httpautotest(myURLOpener):
             json_ = json.loads(content)
         return json_
 
-    def getres(self,domain, remethod, payload, do,*args):
+    def _getres(self, domain, remethod, payload, do, *args):
         payload = payload.encode("utf-8")
-        if len(args)==0:
-            payload_b=''
+        if len(args) == 0:
+            payload_b = ''
         else:
-            payload_b=args[0]
+            payload_b = args[0]
         if remethod.upper() == 'GET':
-            res = requests.get(domain + do, params=payload+'&'+payload_b, timeout=3)
+            res = requests.get(domain + do, params=payload + '&' + payload_b, timeout=3)
             resd = res.content.decode("utf-8")
             return resd
         elif remethod.upper() == 'POST':
-            res = requests.post(domain + do, params=payload +'&'+payload_b, timeout=3)
-            resd=res.content.decode("utf-8")
+            res = requests.post(domain + do, params=payload + '&' + payload_b, timeout=3)
+            resd = res.content.decode("utf-8")
             return resd
         else:
             logging.info(u'请求方式错误')
