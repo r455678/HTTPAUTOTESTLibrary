@@ -123,7 +123,7 @@ class httpautotest():
         'payload': params
         'do': request do
         """
-        descontent = descontent.replace("\n", "").replace(" ", "").encode("utf-8")
+        descontent = descontent.replace("\n", "").replace(" ", "").replace("\t", "").replace("\r", "").encode("utf-8")
         payload = payload.encode("utf-8")
         logging.info(u'请求参数为:' + str(payload))
         if remethod.upper() == 'GET':
@@ -137,13 +137,13 @@ class httpautotest():
         if res.status_code != 200:
             logging.info(u"请求失败,statuscode非200")
             raise AssertionError
-        resreplace = res.content.replace(" ", "")
+        resreplace = res.content.replace(" ", "").replace("\n", "").replace("\t", "").replace("\r", "").encode("utf-8")
         if descontent == resreplace:
             logging.info(u"接口断言通过")
         else:
-            logging.info(u"实际响应数据为:" + res.content.replace(" ", ""))
+            logging.info(u"实际响应数据为:" + resreplace)
             logging.info(u"接口断言与期望不符")
-            logging.info(u"预期结果为" + descontent)
+            logging.info(u"预期响应结果为:" + descontent)
             raise AssertionError
         return res.content.decode("utf-8")
 
@@ -218,3 +218,4 @@ class httpautotest():
             logging.info(u'请求方式错误')
             logging.info(u'请求方式只能为get/post,现为' + remethod)
             raise AssertionError
+
