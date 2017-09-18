@@ -181,11 +181,13 @@ class httpautotest():
         self._checkdb(db['host'], db['db'], db['user'], db['passwd'], db['port'], excelurl, sheetname, rownum)
         return res
 
-    def testcase_one(self, domain, sheetname, excelurl, rownum, *args):
+    def testcase_one(self, domain, sheetname, excelurl, rownum, db, *args):
         do = self._getexcelparas(sheetname, excelurl, rownum)[1]
         remethod = self._getexcelparas(sheetname, excelurl, rownum)[2]
         payload = self._getexcelparas(sheetname, excelurl, rownum)[3]
         res = self._getres(domain, remethod, payload, do, *args)
+        db = self.todict(db)
+        self._checkdb(db['host'], db['db'], db['user'], db['passwd'], db['port'], excelurl, sheetname, rownum)
         return res
 
     def to_json(self, content, pretty_print=False):
