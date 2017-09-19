@@ -105,7 +105,7 @@ class httpautotest():
                 logging.info(u"数据库中没有查询到数据")
                 raise AssertionError
 
-        elif ischeckdb.upper() == 'FALSE' or ischeckdb == '':
+        elif ischeckdb == 'FALSE' or ischeckdb == '' or ischeckdb == 0:
             logging.info(u"不进入SQL判断")
         else:
             logging.info(u'第' + str(rownum) + u'行' + u'是否检查数据库输入不合法')
@@ -127,9 +127,15 @@ class httpautotest():
         payload = payload.encode("utf-8")
         logging.info(u'请求参数为:' + str(payload))
         if remethod.upper() == 'GET':
-            res = requests.get(domain + do, params=payload, timeout=3)
-        elif remethod.upper() == 'POST':
-            res = requests.post(domain + do, params=payload, timeout=3)
+            res = requests.get(domain + do, params=payload, timeout=10)
+        elif remethod.upper() == 'POST' and payload[0] == '{':
+            res = requests.post(domain + do, data=payload, headers={'Content-Type': 'application/json'}, timeout=10)
+            resd = res.content.decode("utf-8")
+            return resd
+        elif remethod.upper() == 'POST' and payload[0] == '{':
+            res = requests.post(domain + do, params=payload , timeout=10)
+            resd = res.content.decode("utf-8")
+            return resd
         else:
             logging.info(u'请求方式错误')
             logging.info(u'请求方式只能为get/post,现为' + remethod)
@@ -207,15 +213,18 @@ class httpautotest():
         else:
             payload_b = args[0]
         if remethod.upper() == 'GET':
-            res = requests.get(domain + do, params=payload + '&' + payload_b, timeout=3)
+            res = requests.get(domain + do, params=payload + '&' + payload_b, headers={'Content-Type': 'application/json'}, timeout=10)
             resd = res.content.decode("utf-8")
             return resd
-        elif remethod.upper() == 'POST':
-            res = requests.post(domain + do, params=payload + '&' + payload_b, timeout=3)
+        elif remethod.upper() == 'POST' and payload[0]=='{':
+            res = requests.post(domain + do, data=payload , headers={'Content-Type': 'application/json'}, timeout=10)
+            resd = res.content.decode("utf-8")
+            return resd
+        elif remethod.upper() == 'POST' and payload[0]=='{':
+            res = requests.post(domain + do, params=payload + '&' + payload_b, timeout=10)
             resd = res.content.decode("utf-8")
             return resd
         else:
             logging.info(u'请求方式错误')
             logging.info(u'请求方式只能为get/post,现为' + remethod)
             raise AssertionError
-
