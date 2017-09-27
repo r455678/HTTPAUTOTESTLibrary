@@ -132,7 +132,7 @@ class httpautotest():
             res = requests.post(domain + do, data=payload, headers={'Content-Type': 'application/json'}, timeout=10)
             resd = res.content.decode("utf-8")
             return resd
-        elif remethod.upper() == 'POST' and payload[0] == '{':
+        elif remethod.upper() == 'POST' and payload[0] != '{' and  payload[0] != '}':
             res = requests.post(domain + do, params=payload , timeout=10)
             resd = res.content.decode("utf-8")
             return resd
