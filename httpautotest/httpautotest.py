@@ -31,6 +31,13 @@ class httpautotest():
             utf8_data[k] = unicode(v).encode('utf-8')
         return urlencode(utf8_data)
 
+    def is_json(self,myjson):
+        try:
+            json.loads(myjson)
+        except ValueError:
+            return False
+        return True
+
     """
     打开excel
     """
@@ -126,13 +133,14 @@ class httpautotest():
         descontent = descontent.replace("\n", "").replace(" ", "").replace("\t", "").replace("\r", "").encode("utf-8")
         payload = payload.encode("utf-8")
         logging.info(u'请求参数为:' + str(payload))
+        isjson=self.is_json(payload)
         if remethod.upper() == 'GET':
             res = requests.get(domain + do, params=payload, timeout=10)
-        elif remethod.upper() == 'POST' and payload[0] == '{':
+        elif remethod.upper() == 'POST' and isjson==True:
             res = requests.post(domain + do, data=payload, headers={'Content-Type': 'application/json'}, timeout=10)
             resd = res.content.decode("utf-8")
             return resd
-        elif remethod.upper() == 'POST' and payload[0] != '{' and  payload[0] != '}':
+        elif remethod.upper() == 'POST' and isjson==False:
             res = requests.post(domain + do, params=payload , timeout=10)
             resd = res.content.decode("utf-8")
             return resd
@@ -213,14 +221,14 @@ class httpautotest():
         else:
             payload_b = args[0]
         if remethod.upper() == 'GET':
-            res = requests.get(domain + do, params=payload + '&' + payload_b, headers={'Content-Type': 'application/json'}, timeout=10)
+            res = requests.get(domain + do, params=payload + '&' + payload_b, timeout=10)
             resd = res.content.decode("utf-8")
             return resd
-        elif remethod.upper() == 'POST' and payload[0]=='{':
+        elif remethod.upper() == 'POST' and payload[0] == '{':
             res = requests.post(domain + do, data=payload , headers={'Content-Type': 'application/json'}, timeout=10)
             resd = res.content.decode("utf-8")
             return resd
-        elif remethod.upper() == 'POST' and payload[0]=='{':
+        elif remethod.upper() == 'POST' and payload[0] != '{':
             res = requests.post(domain + do, params=payload + '&' + payload_b, timeout=10)
             resd = res.content.decode("utf-8")
             return resd
