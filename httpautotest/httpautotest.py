@@ -55,7 +55,7 @@ class httpautotest():
     读取excel参数
     """
 
-    def _getexcelparas(self, sheetname, exceldir, num):
+    def _getexcelparams(self, sheetname, exceldir, num):
         sh = self._openexcel(exceldir, sheetname)
         try:
             row_data = sh.row_values(int(num))
@@ -88,9 +88,9 @@ class httpautotest():
             charset='utf8'
         )
         cur = conn.cursor()
-        ischeckdb = self._getexcelparas(sheetname, excelurl, rownum)[5]
-        sqlscript = self._getexcelparas(sheetname, excelurl, rownum)[6]
-        expectedvalue = self._getexcelparas(sheetname, excelurl, rownum)[7]
+        ischeckdb = self._getexcelparams(sheetname, excelurl, rownum)[5]
+        sqlscript = self._getexcelparams(sheetname, excelurl, rownum)[6]
+        expectedvalue = self._getexcelparams(sheetname, excelurl, rownum)[7]
         if ischeckdb == 1:
             size = cur.execute(sqlscript)
             if size > 0:
@@ -185,20 +185,20 @@ class httpautotest():
         Examples:
         | `Testcase` | http://192.168.20.154 | zkk | ${CURDIR}${/}case1${/}case1.xlsx | 1 | ${db} |
         """
-        logging.info(u'用例名称: ' + self._getexcelparas(sheetname, excelurl, rownum)[0])
-        do = self._getexcelparas(sheetname, excelurl, rownum)[1]  # 方法名
-        remethod = self._getexcelparas(sheetname, excelurl, rownum)[2]  # 请求方式
-        payload = self._getexcelparas(sheetname, excelurl, rownum)[3]  # 请求参数
-        descontent = self._getexcelparas(sheetname, excelurl, rownum)[4]  # 预期结果
+        logging.info(u'用例名称: ' + self._getexcelparams(sheetname, excelurl, rownum)[0])
+        do = self._getexcelparams(sheetname, excelurl, rownum)[1]  # 方法名
+        remethod = self._getexcelparams(sheetname, excelurl, rownum)[2]  # 请求方式
+        payload = self._getexcelparams(sheetname, excelurl, rownum)[3]  # 请求参数
+        descontent = self._getexcelparams(sheetname, excelurl, rownum)[4]  # 预期结果
         res = self._checkdata(domain, descontent, remethod, payload, do)
         db = self.todict(db)
         self._checkdb(db['host'], db['db'], db['user'], db['passwd'], db['port'], excelurl, sheetname, rownum)
         return res
 
     def testcase_one(self, domain, sheetname, excelurl, rownum, *args):
-        do = self._getexcelparas(sheetname, excelurl, rownum)[1]
-        remethod = self._getexcelparas(sheetname, excelurl, rownum)[2]
-        payload = self._getexcelparas(sheetname, excelurl, rownum)[3]
+        do = self._getexcelparams(sheetname, excelurl, rownum)[1]
+        remethod = self._getexcelparams(sheetname, excelurl, rownum)[2]
+        payload = self._getexcelparams(sheetname, excelurl, rownum)[3]
         res = self._getres(domain, remethod, payload, do, *args)
         return res
 
