@@ -102,7 +102,9 @@ class httpautotest():
                     infol[i] = str(infol[i]).encode("utf-8")
                 for i in range(len(arr)):
                     arr[i] = str(arr[i]).encode("utf-8")
-                if infol.sort() == arr.sort():
+                infol.sort()
+                arr.sort()
+                if  infol== arr:
                     logging.info(u"数据库校验通过")
                 else:
                     logging.info(u"数据库校验未通过,预期值: " + str(expectedvalue).replace('.0', ''))
