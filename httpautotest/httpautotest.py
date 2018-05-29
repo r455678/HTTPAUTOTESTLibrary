@@ -79,20 +79,23 @@ class httpautotest():
 
         rownum :row num
         """
-        conn = pymysql.connect(
-            host=host,
-            port=int(port),
-            user=username,
-            passwd=password,
-            db=dbname,
-            charset='utf8'
-        )
-        cur = conn.cursor()
         ischeckdb = self._getexcelparams(sheetname, excelurl, rownum)[5]
         sqlscript = self._getexcelparams(sheetname, excelurl, rownum)[6]
         expectedvalue = self._getexcelparams(sheetname, excelurl, rownum)[7]
         if ischeckdb == 1:
+            conn = pymysql.connect(
+                host=host,
+                port=int(port),
+                user=username,
+                passwd=password,
+                db=dbname,
+                charset='utf8'
+            )
+            cur = conn.cursor()
             size = cur.execute(sqlscript)
+            cur.close()
+            conn.commit()
+            conn.close()
             if size > 0:
                 logging.info(u"查询出数据条数为 " + str(size) + u" 条")
                 info = cur.fetchmany(1)
@@ -119,9 +122,6 @@ class httpautotest():
         else:
             logging.info(u'第' + str(rownum) + u'行' + u'是否检查数据库输入不合法')
             raise RuntimeError
-        cur.close()
-        conn.commit()
-        conn.close()
 
     # 数据校验
     def _checkdata(self, domain, descontent, remethod, payload, do):
@@ -137,15 +137,13 @@ class httpautotest():
         logging.info(u'请求参数为:' + str(payload))
         isjson=self.is_json(payload)
         if remethod.upper() == 'GET':
-            res = requests.get(domain + do, params=payload, timeout=10)
+            resd = requests.get(domain + do, params=payload, timeout=10)
         elif remethod.upper() == 'POST' and isjson==True:
             res = requests.post(domain + do, data=payload, headers={'Content-Type': 'application/json'}, timeout=10)
             resd = res.content.decode("utf-8")
-            return resd
         elif remethod.upper() == 'POST' and isjson==False:
             res = requests.post(domain + do, params=payload , timeout=10)
             resd = res.content.decode("utf-8")
-            return resd
         else:
             logging.info(u'请求方式错误')
             logging.info(u'请求方式只能为get/post,现为' + remethod)
@@ -153,8 +151,8 @@ class httpautotest():
         if res.status_code != 200:
             logging.info(u"请求失败,statuscode非200")
             raise AssertionError
-        resreplace = res.content.replace(" ", "").replace("\n", "").replace("\t", "").replace("\r", "").encode("utf-8")
-        if descontent == resreplace:
+        resreplace = resd.replace(" ", "").replace("\n", "").replace("\t", "").replace("\r", "").encode("utf-8")
+        if descontent in resreplace:
             logging.info(u"接口断言通过")
         else:
             logging.info(u"实际响应数据为:" + resreplace)
