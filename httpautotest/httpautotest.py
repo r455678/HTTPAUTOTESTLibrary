@@ -2,7 +2,7 @@
 # coding:utf8
 # author andre.yang
 
-import requests,xlrd,sys,pymysql, robot ,logging ,json
+import requests, xlrd, sys, pymysql, robot, logging, json, random
 from urllib import urlencode
 from robot.libraries.BuiltIn import BuiltIn
 
@@ -38,6 +38,8 @@ class httpautotest():
             return False
         return True
 
+    def random_char8(self):
+        return random.randint(1,999999999)
     """
     打开excel
     """
@@ -124,7 +126,7 @@ class httpautotest():
             raise RuntimeError
 
     # 数据校验
-    def _checkdata(self, domain, descontent, remethod, payload, do):
+    def _checkdata(self, domain, descontent, remethod, payload, do, *args):
         """
         'domain': server host
         'descontent': wish content
@@ -133,21 +135,9 @@ class httpautotest():
         'do': request do
         """
         descontent = descontent.replace("\n", "").replace(" ", "").replace("\t", "").replace("\r", "").encode("utf-8")
-        payload = payload.encode("utf-8")
         logging.info(u'请求参数为:' + str(payload))
-        isjson=self.is_json(payload)
-        if remethod.upper() == 'GET':
-            resd = requests.get(domain + do, params=payload, timeout=10)
-        elif remethod.upper() == 'POST' and isjson==True:
-            res = requests.post(domain + do, data=payload, headers={'Content-Type': 'application/json'}, timeout=10)
-            resd = res.content.decode("utf-8")
-        elif remethod.upper() == 'POST' and isjson==False:
-            res = requests.post(domain + do, params=payload , timeout=10)
-            resd = res.content.decode("utf-8")
-        else:
-            logging.info(u'请求方式错误')
-            logging.info(u'请求方式只能为get/post,现为' + remethod)
-            raise AssertionError
+        res = self._getres(domain, remethod, payload, do, *args)
+        resd = res.content.decode("utf-8")
         if res.status_code != 200:
             logging.info(u"请求失败,statuscode非200")
             raise AssertionError
@@ -169,7 +159,7 @@ class httpautotest():
         return redb
 
     # case执行方法
-    def testcase(self, domain, sheetname, excelurl, rownum, db):
+    def testcase(self, domain, sheetname, excelurl, rownum, db, *args):
 
         """
         'domain': host
@@ -190,47 +180,30 @@ class httpautotest():
         remethod = self._getexcelparams(sheetname, excelurl, rownum)[2]  # 请求方式
         payload = self._getexcelparams(sheetname, excelurl, rownum)[3]  # 请求参数
         descontent = self._getexcelparams(sheetname, excelurl, rownum)[4]  # 预期结果
-        res = self._checkdata(domain, descontent, remethod, payload, do)
+        res = self._checkdata(domain, descontent, remethod, payload, do, *args)
         db = self.todict(db)
         self._checkdb(db['host'], db['db'], db['user'], db['passwd'], db['port'], excelurl, sheetname, rownum)
         return res
-
-    def testcase_one(self, domain, sheetname, excelurl, rownum, *args):
-        do = self._getexcelparams(sheetname, excelurl, rownum)[1]
-        remethod = self._getexcelparams(sheetname, excelurl, rownum)[2]
-        payload = self._getexcelparams(sheetname, excelurl, rownum)[3]
-        res = self._getres(domain, remethod, payload, do, *args)
-        return res
-
-    def to_json(self, content, pretty_print=False):
-        """ Convert a string to a JSON object
-        `content` String content to convert into JSON
-        'pretty_print' If defined, will output JSON is pretty print format
-        """
-        content = self._utf8_urlencode(content)
-        if pretty_print:
-            json_ = self._json_pretty_print(content)
-        else:
-            json_ = json.loads(content)
-        return json_
 
     def _getres(self, domain, remethod, payload, do, *args):
         payload = payload.encode("utf-8")
         if len(args) == 0:
             payload_b = ''
         else:
-            payload_b = args[0]
+            payload_b = str(args[0])
+        if payload =='':
+            payload = ' '
         if remethod.upper() == 'GET':
             res = requests.get(domain + do, params=payload + '&' + payload_b, timeout=10)
-            resd = res.content.decode("utf-8")
+            resd = res
             return resd
         elif remethod.upper() == 'POST' and payload[0] == '{':
             res = requests.post(domain + do, data=payload , headers={'Content-Type': 'application/json'}, timeout=10)
-            resd = res.content.decode("utf-8")
+            resd = res
             return resd
         elif remethod.upper() == 'POST' and payload[0] != '{':
             res = requests.post(domain + do, params=payload + '&' + payload_b, timeout=10)
-            resd = res.content.decode("utf-8")
+            resd = res
             return resd
         else:
             logging.info(u'请求方式错误')
