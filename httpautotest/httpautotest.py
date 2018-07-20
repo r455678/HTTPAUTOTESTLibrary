@@ -72,13 +72,9 @@ class httpautotest():
         'dbname': database's name
         'username': dbusername
         'password': dbpassword
-
         'port': dbport
-
         'excelurl': exp D://downloads/case.xls
-
         sheetname: sheet's name exp sheet1
-
         rownum :row num
         """
         ischeckdb = self._getexcelparams(sheetname, excelurl, rownum)[5]
@@ -126,7 +122,7 @@ class httpautotest():
             raise RuntimeError
 
     # 数据校验
-    def _checkdata(self, domain, descontent, remethod, payload, do, *args):
+    def _checkdata(self, domain, descontent, remethod, payload, do, excelurl, sheetname, rownum, *args):
         """
         'domain': server host
         'descontent': wish content
@@ -134,7 +130,11 @@ class httpautotest():
         'payload': params
         'do': request do
         """
-        descontent = descontent.replace("\n", "").replace(" ", "").replace("\t", "").replace("\r", "").encode("utf-8")
+        descontentreplace = descontent.replace("\n", "").replace(" ", "").replace("\t", "").replace("\r", "").encode("utf-8")
+        isignore = self._getexcelparams(sheetname, excelurl, rownum)[8]
+        ignorefields = self._getexcelparams(sheetname, excelurl, rownum)[9]
+        ignorefieldsl=ignorefields.split(',')
+        dictdescontent=eval(descontentreplace)
         logging.info(u'请求参数为:' + str(payload))
         res = self._getres(domain, remethod, payload, do, *args)
         resd = res.content.decode("utf-8")
@@ -142,12 +142,25 @@ class httpautotest():
             logging.info(u"请求失败,statuscode非200")
             raise AssertionError
         resreplace = resd.replace(" ", "").replace("\n", "").replace("\t", "").replace("\r", "").encode("utf-8")
-        if descontent in resreplace:
+        for i in range(len(ignorefieldsl)):
+            dictdescontent.pop(ignorefieldsl[i])
+        if isignore==1:
+            descontent=json.dumps(dictdescontent, encoding='UTF-8', ensure_ascii=False)
+            logging.info(u'忽略校验字段为:' + str(ignorefields))
+            resreplacel = eval(resreplace)
+            for i in range(len(ignorefieldsl)):
+                resreplacel.pop(ignorefieldsl[i])
+            resreplace2 = json.dumps(resreplacel, encoding='UTF-8', ensure_ascii=False)
+        else:
+            logging.info(u'无忽略校验字段')
+            descontent=descontentreplace
+            resreplace2=resreplace
+        if descontent in resreplace2:
             logging.info(u"接口断言通过")
         else:
             logging.info(u"实际响应数据为:" + resreplace)
             logging.info(u"接口断言与期望不符")
-            logging.info(u"预期响应结果为:" + descontent)
+            logging.info(u"预期响应结果为:" + descontentreplace)
             raise AssertionError
         return res.content.decode("utf-8")
 
@@ -180,7 +193,7 @@ class httpautotest():
         remethod = self._getexcelparams(sheetname, excelurl, rownum)[2]  # 请求方式
         payload = self._getexcelparams(sheetname, excelurl, rownum)[3]  # 请求参数
         descontent = self._getexcelparams(sheetname, excelurl, rownum)[4]  # 预期结果
-        res = self._checkdata(domain, descontent, remethod, payload, do, *args)
+        res = self._checkdata(domain, descontent, remethod, payload, do, excelurl, sheetname, rownum, *args)
         db = self.todict(db)
         self._checkdb(db['host'], db['db'], db['user'], db['passwd'], db['port'], excelurl, sheetname, rownum)
         return res
