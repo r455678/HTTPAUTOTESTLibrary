@@ -133,8 +133,6 @@ class httpautotest():
         descontentreplace = descontent.replace("\n", "").replace(" ", "").replace("\t", "").replace("\r", "").encode("utf-8")
         isignore = self._getexcelparams(sheetname, excelurl, rownum)[8]
         ignorefields = self._getexcelparams(sheetname, excelurl, rownum)[9]
-        ignorefieldsl=ignorefields.split(',')
-        dictdescontent=eval(descontentreplace)
         logging.info(u'请求参数为:' + str(payload))
         res = self._getres(domain, remethod, payload, do, *args)
         resd = res.content.decode("utf-8")
@@ -142,9 +140,11 @@ class httpautotest():
             logging.info(u"请求失败,statuscode非200")
             raise AssertionError
         resreplace = resd.replace(" ", "").replace("\n", "").replace("\t", "").replace("\r", "").encode("utf-8")
-        for i in range(len(ignorefieldsl)):
-            dictdescontent.pop(ignorefieldsl[i])
+        ignorefieldsl=ignorefields.split(',')
+        dictdescontent= json.loads(descontentreplace)
         if isignore==1:
+            for i in range(len(ignorefieldsl)):
+                dictdescontent.pop(ignorefieldsl[i])
             descontent=json.dumps(dictdescontent, encoding='UTF-8', ensure_ascii=False)
             logging.info(u'忽略校验字段为:' + str(ignorefields))
             resreplacel = eval(resreplace)
