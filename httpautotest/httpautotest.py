@@ -141,13 +141,13 @@ class httpautotest():
             raise AssertionError
         resreplace = resd.replace(" ", "").replace("\n", "").replace("\t", "").replace("\r", "").encode("utf-8")
         ignorefieldsl=ignorefields.split(',')
-        dictdescontent= json.loads(descontentreplace)
         if isignore==1:
+            dictdescontent = json.loads(descontentreplace)
             for i in range(len(ignorefieldsl)):
                 dictdescontent.pop(ignorefieldsl[i])
             descontent=json.dumps(dictdescontent, encoding='UTF-8', ensure_ascii=False)
             logging.info(u'忽略校验字段为:' + str(ignorefields))
-            resreplacel = eval(resreplace)
+            resreplacel = json.loads(resreplace)
             for i in range(len(ignorefieldsl)):
                 resreplacel.pop(ignorefieldsl[i])
             resreplace2 = json.dumps(resreplacel, encoding='UTF-8', ensure_ascii=False)
@@ -170,6 +170,7 @@ class httpautotest():
         except:
             return (u'数据库配置错误')
         return redb
+
 
     # case执行方法
     def testcase(self, domain, sheetname, excelurl, rownum, db, *args):
@@ -215,7 +216,8 @@ class httpautotest():
             resd = res
             return resd
         elif remethod.upper() == 'POST' and payload[0] != '{':
-            res = requests.post(domain + do, params=payload + '&' + payload_b, timeout=10)
+            payload=''
+            res = requests.post(domain + do, data=payload+payload_b, headers={'Content-Type': 'application/x-www-form-urlencoded'} ,timeout=10)
             resd = res
             return resd
         else:
