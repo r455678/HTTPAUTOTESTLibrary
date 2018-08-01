@@ -31,7 +31,7 @@ class httpautotest():
             utf8_data[k] = unicode(v).encode('utf-8')
         return urlencode(utf8_data)
 
-    def is_json(self,myjson):
+    def _is_json(self,myjson):
         try:
             json.loads(myjson)
         except ValueError:
@@ -122,7 +122,7 @@ class httpautotest():
             raise RuntimeError
 
     # 数据校验
-    def _checkdata(self, domain, descontent, remethod, payload, do, excelurl, sheetname, rownum, *args):
+    def _checkdata(self, domain, descontent, remethod, payload, do, excelurl, sheetname, rownum, **kwargs):
         """
         'domain': server host
         'descontent': wish content
@@ -134,7 +134,7 @@ class httpautotest():
         isignore = self._getexcelparams(sheetname, excelurl, rownum)[8]
         ignorefields = self._getexcelparams(sheetname, excelurl, rownum)[9]
         logging.info(u'请求参数为:' + str(payload))
-        res = self._getres(domain, remethod, payload, do, *args)
+        res = self._getres(domain, remethod, payload, do, **kwargs)
         resd = res.content.decode("utf-8")
         if res.status_code != 200:
             logging.info(u"请求失败,statuscode非200")
@@ -173,7 +173,7 @@ class httpautotest():
 
 
     # case执行方法
-    def testcase(self, domain, sheetname, excelurl, rownum, db, *args):
+    def testcase(self, domain, sheetname, excelurl, rownum, db, **kwargs):
 
         """
         'domain': host
@@ -194,33 +194,40 @@ class httpautotest():
         remethod = self._getexcelparams(sheetname, excelurl, rownum)[2]  # 请求方式
         payload = self._getexcelparams(sheetname, excelurl, rownum)[3]  # 请求参数
         descontent = self._getexcelparams(sheetname, excelurl, rownum)[4]  # 预期结果
-        res = self._checkdata(domain, descontent, remethod, payload, do, excelurl, sheetname, rownum, *args)
+        res = self._checkdata(domain, descontent, remethod, payload, do, excelurl, sheetname, rownum, **kwargs)
         db = self.todict(db)
         self._checkdb(db['host'], db['db'], db['user'], db['passwd'], db['port'], excelurl, sheetname, rownum)
         return res
 
-    def _getres(self, domain, remethod, payload, do, *args):
+    def _getres(self, domain, remethod, payload, do, **kwargs):
         payload = payload.encode("utf-8")
-        if len(args) == 0:
+        if kwargs.has_key('params') == False:
             payload_b = ''
         else:
-            payload_b = str(args[0])
-        if payload =='':
-            payload = ' '
+            payload_b = kwargs['params']
+        if kwargs.has_key('headers') == False:
+            headers_d=''
+        else:
+            headers_d1 = kwargs['headers']
+            headers_d1=headers_d1.replace("'", "\"")
+            headers_d=json.loads(headers_d1)
         if remethod.upper() == 'GET':
-            res = requests.get(domain + do, params=payload + '&' + payload_b, timeout=10)
+            res = requests.get(domain + do, params=payload + '&' + payload_b,headers=headers_d, timeout=10)
             resd = res
             return resd
-        elif remethod.upper() == 'POST' and payload[0] == '{':
-            res = requests.post(domain + do, data=payload , headers={'Content-Type': 'application/json'}, timeout=10)
+        elif remethod.upper() == 'POST' and 'application/json' in kwargs['headers']:
+            res = requests.post(domain + do, data=payload ,headers={'content-type':'application/json'}, timeout=10)
             resd = res
             return resd
-        elif remethod.upper() == 'POST' and payload[0] != '{':
-            payload=''
-            res = requests.post(domain + do, data=payload+payload_b, headers={'Content-Type': 'application/x-www-form-urlencoded'} ,timeout=10)
+        elif remethod.upper() == 'POST' and  'application/json' not in kwargs['headers']:
+            print headers_d
+            logging.info(headers_d)
+            res = requests.post(domain + do, data=payload+payload_b, headers=headers_d ,timeout=10)
             resd = res
             return resd
         else:
             logging.info(u'请求方式错误')
             logging.info(u'请求方式只能为get/post,现为' + remethod)
             raise AssertionError
+
+
