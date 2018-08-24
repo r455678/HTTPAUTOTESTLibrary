@@ -149,7 +149,11 @@ class httpautotest():
             logging.info(u'忽略校验字段为:' + str(ignorefields))
             resreplacel = json.loads(resreplace)
             for i in range(len(ignorefieldsl)):
-                resreplacel.pop(ignorefieldsl[i])
+                if json.loads(res.content).has_key(ignorefieldsl[i])==False:
+                    logging.info(u"返回内容中无忽略字段,实际返回为"+res.content)
+                    raise AssertionError
+                else:
+                    resreplacel.pop(ignorefieldsl[i])
             resreplace2 = json.dumps(resreplacel, encoding='UTF-8', ensure_ascii=False)
         else:
             logging.info(u'无忽略校验字段')
@@ -199,7 +203,7 @@ class httpautotest():
         self._checkdb(db['host'], db['db'], db['user'], db['passwd'], db['port'], excelurl, sheetname, rownum)
         return res
 
-    def _getres(self, domain, remethod, payload, do, **kwargs):
+        def _getres(self, domain, remethod, payload, do, **kwargs):
         payload = payload.encode("utf-8")
         if kwargs.has_key('params') == False:
             payload_b = ''
@@ -207,20 +211,21 @@ class httpautotest():
             payload_b = kwargs['params']
         if kwargs.has_key('headers') == False:
             headers_d=''
+            status = 1
         else:
-            headers_d1 = kwargs['headers']
-            headers_d1=headers_d1.replace("'", "\"")
-            headers_d=json.loads(headers_d1)
+            headers_t = kwargs['headers']
+            headers_t=headers_t.replace("'", "\"")
+            headers_d=json.loads(headers_t)
+            status = 0
         if remethod.upper() == 'GET':
             res = requests.get(domain + do, params=payload + '&' + payload_b,headers=headers_d, timeout=10)
             resd = res
             return resd
-        elif remethod.upper() == 'POST' and 'application/json' in kwargs['headers']:
+        elif remethod.upper() == 'POST' and status == 1 :
             res = requests.post(domain + do, data=payload ,headers={'content-type':'application/json'}, timeout=10)
             resd = res
             return resd
-        elif remethod.upper() == 'POST' and  'application/json' not in kwargs['headers']:
-            print headers_d
+        elif remethod.upper() == 'POST' and  status == 0:
             logging.info(headers_d)
             res = requests.post(domain + do, data=payload+payload_b, headers=headers_d ,timeout=10)
             resd = res
