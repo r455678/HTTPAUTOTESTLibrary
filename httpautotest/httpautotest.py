@@ -203,12 +203,13 @@ class httpautotest():
         self._checkdb(db['host'], db['db'], db['user'], db['passwd'], db['port'], excelurl, sheetname, rownum)
         return res
 
-        def _getres(self, domain, remethod, payload, do, **kwargs):
+    def _getres(self, domain, remethod, payload, do, **kwargs):
         payload = payload.encode("utf-8")
         if kwargs.has_key('params') == False:
             payload_b = ''
         else:
             payload_b = kwargs['params']
+        #如没有指定请求头格式,默认{'content-type':'application/json'}
         if kwargs.has_key('headers') == False:
             headers_d=''
             status = 1
