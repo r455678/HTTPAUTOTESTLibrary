@@ -5,6 +5,9 @@
 import requests, xlrd, sys, pymysql, robot, logging, json, random
 from urllib import urlencode
 from robot.libraries.BuiltIn import BuiltIn
+import shutil
+import os
+import openpyxl
 
 default_encoding = 'utf-8'
 if sys.getdefaultencoding() != default_encoding:
@@ -45,6 +48,7 @@ class httpautotest():
     """
 
     def _openexcel(self, excelurl, sheetname):
+
         bk = xlrd.open_workbook(excelurl)
         try:
             sh = bk.sheet_by_name(sheetname)
@@ -57,8 +61,13 @@ class httpautotest():
     读取excel参数
     """
 
-    def _getexcelparams(self, sheetname, exceldir, num):
+    def getexcelparams(self, sheetname, exceldir, num):
+
         sh = self._openexcel(exceldir, sheetname)
+
+        rows = sh.nrows
+        if int(num) >= int(rows):
+            return False
         try:
             row_data = sh.row_values(int(num))
         except Exception, e:
@@ -67,6 +76,7 @@ class httpautotest():
 
     # 数据校验方法
     def _checkdb(self, host, dbname, username, password, port, excelurl, sheetname, rownum):
+
         """
         'host': dbhost
         'dbname': database's name
@@ -77,9 +87,9 @@ class httpautotest():
         sheetname: sheet's name exp sheet1
         rownum :row num
         """
-        ischeckdb = self._getexcelparams(sheetname, excelurl, rownum)[5]
-        sqlscript = self._getexcelparams(sheetname, excelurl, rownum)[6]
-        expectedvalue = self._getexcelparams(sheetname, excelurl, rownum)[7]
+        ischeckdb = self.getexcelparams(sheetname, excelurl, rownum)[5]
+        sqlscript = self.getexcelparams(sheetname, excelurl, rownum)[6]
+        expectedvalue = self.getexcelparams(sheetname, excelurl, rownum)[7]
         if ischeckdb == 1:
             conn = pymysql.connect(
                 host=host,
@@ -131,9 +141,10 @@ class httpautotest():
         'do': request do
         """
         descontentreplace = descontent.replace("\n", "").replace(" ", "").replace("\t", "").replace("\r", "").encode("utf-8")
-        isignore = self._getexcelparams(sheetname, excelurl, rownum)[8]
-        ignorefields = self._getexcelparams(sheetname, excelurl, rownum)[9]
+        isignore = self.getexcelparams(sheetname, excelurl, rownum)[8]
+        ignorefields = self.getexcelparams(sheetname, excelurl, rownum)[9]
         logging.info(u'请求参数为:' + str(payload))
+        print u'请求参数为:' + str(payload)
         res = self._getres(domain, remethod, payload, do, **kwargs)
         resd = res.content.decode("utf-8")
         if res.status_code != 200:
@@ -151,6 +162,7 @@ class httpautotest():
             for i in range(len(ignorefieldsl)):
                 if json.loads(res.content).has_key(ignorefieldsl[i])==False:
                     logging.info(u"返回内容中无忽略字段,实际返回为"+res.content)
+                    print u"返回内容中无忽略字段,实际返回为"+res.content
                     raise AssertionError
                 else:
                     resreplacel.pop(ignorefieldsl[i])
@@ -181,27 +193,23 @@ class httpautotest():
 
         """
         'domain': host
-
         'sheetname': sheet's name exp sheet1
-
         'excelurl': exp D://downloads/case.xls
-
         'rownum': row number
-
         'db': database config
-
         Examples:
         | `Testcase` | http://192.168.20.154 | zkk | ${CURDIR}${/}case1${/}case1.xlsx | 1 | ${db} |
         """
-        logging.info(u'用例名称: ' + self._getexcelparams(sheetname, excelurl, rownum)[0])
-        do = self._getexcelparams(sheetname, excelurl, rownum)[1]  # 方法名
-        remethod = self._getexcelparams(sheetname, excelurl, rownum)[2]  # 请求方式
-        payload = self._getexcelparams(sheetname, excelurl, rownum)[3]  # 请求参数
-        descontent = self._getexcelparams(sheetname, excelurl, rownum)[4]  # 预期结果
+        logging.info(u'用例名称: ' + self.getexcelparams(sheetname, excelurl, rownum)[0])
+        do = self.getexcelparams(sheetname, excelurl, rownum)[1]  # 方法名
+        remethod = self.getexcelparams(sheetname, excelurl, rownum)[2]  # 请求方式
+        payload = self.getexcelparams(sheetname, excelurl, rownum)[3]  # 请求参数
+        descontent = self.getexcelparams(sheetname, excelurl, rownum)[4]  # 预期结果
         res = self._checkdata(domain, descontent, remethod, payload, do, excelurl, sheetname, rownum, **kwargs)
         db = self.todict(db)
         self._checkdb(db['host'], db['db'], db['user'], db['passwd'], db['port'], excelurl, sheetname, rownum)
         return res
+        logging.info()
 
     def _getres(self, domain, remethod, payload, do, **kwargs):
         payload = payload.encode("utf-8")
@@ -209,7 +217,7 @@ class httpautotest():
             payload_b = ''
         else:
             payload_b = kwargs['params']
-        #如没有指定请求头格式,默认{'content-type':'application/json'}
+
         if kwargs.has_key('headers') == False:
             headers_d=''
             status = 1
@@ -235,5 +243,3 @@ class httpautotest():
             logging.info(u'请求方式错误')
             logging.info(u'请求方式只能为get/post,现为' + remethod)
             raise AssertionError
-
-
