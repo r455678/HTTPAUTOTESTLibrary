@@ -5,9 +5,6 @@
 import requests, xlrd, sys, pymysql, robot, logging, json, random
 from urllib import urlencode
 from robot.libraries.BuiltIn import BuiltIn
-import shutil
-import os
-import openpyxl
 
 default_encoding = 'utf-8'
 if sys.getdefaultencoding() != default_encoding:
