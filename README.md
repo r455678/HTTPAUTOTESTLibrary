@@ -12,3 +12,4 @@
 ## 优化了代码结构，需要用Python3.6以上版本
 ## 导入的方式变为单独py文件
 ## 支持rf1.73
+## 使用pip install httpautotest 安装
