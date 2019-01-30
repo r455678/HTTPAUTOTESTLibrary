@@ -1,7 +1,0 @@
-PyMySQL==0.7.10
-requests==2.18.1
-robotbackgroundlogger==1.2
-robotframework==3.0.4
-robotframework-ride==1.5.2.1
-urllib3==1.21.1
-xlrd==1.0.0
